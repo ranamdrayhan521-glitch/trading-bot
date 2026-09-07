@@ -1,5 +1,4 @@
 import time
-import random
 import threading
 import json
 import urllib.request
@@ -10,15 +9,19 @@ app = Flask(__name__)
 latest_signal = {
     "pair": "BTC/USDT (Live)",
     "price": 0.0,
-    "signal": "⏳ WAITING...",
+    "prev_price": 0.0,
+    "signal": "⏳ ANALYZING MARKET...",
     "time": ""
 }
 
 def background_market_scanner():
     global latest_signal
+    # প্রথমে আগের প্রাইস স্টোর করার ভেরিয়েবল
+    last_known_price = 0.0
+    
     while True:
         try:
-            # একদম সহজ ও ডিরেক্ট পাবলিক ক্রিপ্টো প্রাইস সোর্স
+            # CoinCap রিয়েল-টাইম বিটকয়েন এপিআই
             url = "https://api.coincap.io/v2/assets/bitcoin"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             
@@ -26,8 +29,17 @@ def background_market_scanner():
                 res_data = json.loads(response.read().decode())
                 current_price = float(res_data['data']['priceUsd'])
             
-            signals_list = ["🟢 CALL (UP)", "🔴 PUT (DOWN)", "⏳ HOLD / NO TRADE"]
-            chosen_signal = random.choice(signals_list)
+            # রিয়েল-টাইম প্রাইস অ্যাকশন এনালাইসিস লজিক
+            if last_known_price == 0.0:
+                chosen_signal = "⏳ ANALYZING..."
+            elif current_price > last_known_price:
+                chosen_signal = "🟢 CALL (UP)"  # মার্কেট উপরে উঠছে
+            elif current_price < last_known_price:
+                chosen_signal = "🔴 PUT (DOWN)" # মার্কেট নিচে নামছে
+            else:
+                chosen_signal = "⏳ HOLD / SIDEWAYS"
+                
+            last_known_price = current_price
             
             latest_signal = {
                 "pair": "BTC/USDT (Live)",
@@ -36,28 +48,21 @@ def background_market_scanner():
                 "time": time.strftime("%Y-%m-%d %H:%M:%S")
             }
             
-            print(f"[SUCCESS] Price Fetched: {current_price} | Signal: {chosen_signal}")
+            print(f"[REAL-TIME] Price: {current_price} | Signal: {chosen_signal}")
             
         except Exception as e:
-            print(f"[ERROR] Fetching failed: {e}")
-            # ফলব্যাক হিসেবে একটা ডামি লাইভ প্রাইস সেট করে দিচ্ছি যাতে জিরো না দেখায়
-            latest_signal = {
-                "pair": "BTC/USDT (Live)",
-                "price": 65432.10, 
-                "signal": "🟢 CALL (UP)",
-                "time": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+            print(f"[ERROR] Live fetch failed: {e}")
             
         time.sleep(3)
 
-# ব্যাকগ্রাউন্ড থ্রেড স্টার্ট
+# ব্যাকগ্রাউন্ড রিয়েল-টাইম থ্রেড স্টার্ট
 scanner_thread = threading.Thread(target=background_market_scanner)
 scanner_thread.daemon = True
 scanner_thread.start()
 
 @app.route('/')
 def home():
-    return "🚀 Trading Bot Server is Alive and Running Perfectly!"
+    return "🚀 Real-Time Trading Bot Server is Active!"
 
 @app.route('/get-signal', methods=['GET'])
 def get_signal():
