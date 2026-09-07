@@ -1,5 +1,6 @@
 import time
 import random
+import threading
 from flask import Flask, jsonify
 
 app = Flask(__name__)
@@ -41,6 +42,11 @@ def background_market_scanner():
             
         time.sleep(3)
 
+# ব্যাকগ্রাউন্ড থ্রেড অটো স্টার্ট করার জন্য
+scanner_thread = threading.Thread(target=background_market_scanner)
+scanner_thread.daemon = True
+scanner_thread.start()
+
 @app.route('/')
 def home():
     return "🚀 Trading Bot Server is Alive and Running Perfectly!"
@@ -50,9 +56,4 @@ def get_signal():
     return jsonify(latest_signal)
 
 if __name__ == '__main__':
-    import threading
-    t = threading.Thread(target=background_market_scanner)
-    t.daemon = True
-    t.start()
-    
     app.run(host='0.0.0.0', port=5000)
