@@ -19,11 +19,12 @@ def background_market_scanner():
             import urllib.request
             import json
             
-            url = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+            # CoinCap-এর সুপার ফাস্ট রিয়েল-টাইম বিটকয়েন প্রাইস এপিআই
+            url = "https://api.coincap.io/v2/assets/bitcoin"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
-                data = json.loads(response.read().decode())
-                current_price = float(data['price'])
+                result = json.loads(response.read().decode())
+                current_price = float(result['data']['priceUsd'])
             
             signals_list = ["🟢 CALL (UP)", "🔴 PUT (DOWN)", "⏳ HOLD / NO TRADE"]
             chosen_signal = random.choice(signals_list)
